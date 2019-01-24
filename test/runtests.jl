@@ -127,16 +127,33 @@ end
     end
 end
 
-@testset "jarvis_march!" begin
-    hull = ConvexHull{Float64}()
-    rng = MersenneTwister(2)
-    for n = 1 : 10
-        for _ = 1 : 10_000
-            points = [rand(rng, Point{Float64}) for i = 1 : n]
-            jarvis_march!(hull, points)
-            @test is_ccw_and_strongly_convex(vertices(hull))
+function convex_hull_test(hullfun!)
+    @testset "random" begin
+        hull = ConvexHull{Float64}()
+        rng = MersenneTwister(2)
+        for n = 1 : 10
+            for _ = 1 : 10_000
+                points = [rand(rng, Point{Float64}) for i = 1 : n]
+                hullfun!(hull, points)
+                @test is_ccw_and_strongly_convex(vertices(hull))
+            end
         end
     end
+
+    @testset "collinear input" begin
+        hull = ConvexHull{Float64}()
+        points = [Point(0., 0.), Point(0., 1.), Point(0., 2.), Point(1., 0.), Point(1., 1.), Point(1., 2.)]
+        for i = 1 : 10
+            shuffle!(points)
+            hullfun!(hull, points)
+            @test is_ccw_and_strongly_convex(vertices(hull))
+            @test isempty(symdiff(vertices(hull), [Point(0., 0.), Point(1., 0.), Point(1., 2.), Point(0., 2.)]))
+        end
+    end
+end
+
+@testset "jarvis_march!" begin
+    convex_hull_test(jarvis_march!)
 end
 
 end # module
