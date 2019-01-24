@@ -17,7 +17,7 @@ const PointLike{T} = StaticVector{2, T}
 
 unpack(v::PointLike) = @inbounds return v[1], v[2]
 
-@noinline function cross2(v1::StaticVector{2}, v2::StaticVector{2}) # inlining this breaks things somehow!!!!!!!!!
+@inline function cross2(v1::StaticVector{2}, v2::StaticVector{2}) # inlining this breaks things somehow!!!!!!!!!
     x1, y1 = unpack(v1)
     x2, y2 = unpack(v2)
     x1 * y2 - x2 * y1
