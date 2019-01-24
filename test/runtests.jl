@@ -184,4 +184,21 @@ end
     end
 end
 
+visualize = true
+if visualize
+    flush(stdout)
+    using UnicodePlots
+    hull = ConvexHull{CCW, Float64}()
+    rng = MersenneTwister(3)
+    n = 5
+    points = [rand(rng, Point{Float64}) for i = 1 : n]
+    jarvis_march!(hull, points)
+    projections = map(1 : 1_000_000) do _
+        closest_point(rand(rng, Point{Float64}), hull)
+    end
+    plt = scatterplot(getindex.(projections, 1), getindex.(projections, 2))
+    scatterplot!(plt, getindex.(vertices(hull), 1), getindex.(vertices(hull), 2), color = :red)
+    display(plt)
+end
+
 end # module
