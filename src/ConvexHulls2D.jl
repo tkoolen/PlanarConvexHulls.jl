@@ -6,7 +6,8 @@ export
     num_vertices,
     area,
     centroid,
-    is_ccw_and_strongly_convex
+    is_ccw_and_strongly_convex,
+    jarvis_march!
 
 using LinearAlgebra
 using StaticArrays
@@ -16,7 +17,7 @@ const PointLike{T} = StaticVector{2, T}
 
 unpack(v::PointLike) = @inbounds return v[1], v[2]
 
-@inline function cross2(v1::StaticVector{2}, v2::StaticVector{2})
+@noinline function cross2(v1::StaticVector{2}, v2::StaticVector{2}) # inlining this breaks things somehow!!!!!!!!!
     x1, y1 = unpack(v1)
     x2, y2 = unpack(v2)
     x1 * y2 - x2 * y1
@@ -39,15 +40,18 @@ struct ConvexHull2D{T, P<:PointLike{T}, V<:AbstractVector{P}}
     end
 end
 
-@inline vertices(hull::ConvexHull2D) = hull.vertices
-@inline num_vertices(hull::ConvexHull2D) = length(vertices(hull))
-@inline Base.isempty(hull::ConvexHull2D) = num_vertices(hull) > 0
+ConvexHull2D{T}() where {T} = ConvexHull2D(SVector{2, T}[])
+
+vertices(hull::ConvexHull2D) = hull.vertices
+num_vertices(hull::ConvexHull2D) = length(vertices(hull))
+Base.isempty(hull::ConvexHull2D) = num_vertices(hull) > 0
+Base.empty!(hull::ConvexHull2D) = (empty!(hull.vertices); hull)
 
 function area(hull::ConvexHull2D{T}) where T
     # https://en.wikipedia.org/wiki/Shoelace_formula
     vertices = hull.vertices
     n = length(vertices)
-    n > 1 || return zero(arithmetic_closure(T))
+    n <= 2 && return zero(arithmetic_closure(T))
     @inbounds begin
         ret = cross2(vertices[n], vertices[1])
         @simd for i in Base.OneTo(n - 1)
@@ -119,6 +123,50 @@ function centroid(hull::ConvexHull2D{T}) where T
             return centroid
         end
     end
+end
+
+function jarvis_march!(hull::ConvexHull2D{T}, points::AbstractVector{<:PointLike{T}}) where T
+    # Adapted from https://www.algorithm-archive.org/contents/jarvis_march/jarvis_march.html.
+    empty!(hull)
+    n = length(points)
+    vertices = hull.vertices
+    @inbounds begin
+        if n <= 2
+            resize!(vertices, n)
+            vertices .= points
+        else
+            # Initialize with leftmost point
+            start = last(points)
+            @simd for i in Base.OneTo(n - 1)
+                p = points[i]
+                start = ifelse(p[1] < start[1], p, start)
+            end
+
+            current = start
+            while true
+                # Add point
+                push!(vertices, current)
+
+                # @assert is_ccw_and_strongly_convex(vertices)
+                # @assert length(vertices) <= n
+
+                # Next point is the one with with largest internal angle
+                next = last(points)
+                δnext = next - current
+                for i in Base.OneTo(n - 1)
+                    p = points[i]
+                    δ = p - current
+                    if next == current || cross2(δnext, δ) < 0
+                        next = p
+                        δnext = δ
+                    end
+                end
+                current = next
+                current == first(vertices) && break
+            end
+        end
+    end
+    return hull
 end
 
 end # module

@@ -127,4 +127,16 @@ end
     end
 end
 
+@testset "jarvis_march!" begin
+    hull = ConvexHull2D{Float64}()
+    rng = MersenneTwister(2)
+    for n = 1 : 10
+        for _ = 1 : 10_000
+            points = [rand(rng, Point{Float64}) for i = 1 : n]
+            jarvis_march!(hull, points)
+            @test is_ccw_and_strongly_convex(vertices(hull))
+        end
+    end
+end
+
 end # module
