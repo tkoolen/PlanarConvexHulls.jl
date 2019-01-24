@@ -5,6 +5,7 @@ using StaticArrays
 using Test
 using Random
 using LinearAlgebra
+using Statistics
 
 const Point{T} = SVector{2, T}
 
@@ -64,11 +65,11 @@ end
     @testset "line segment" begin
         p1 = SVector(1, 1)
         p2 = SVector(3, 5)
-        C = ConvexHull2D([p1, p2])
-        @test p1 ∈ C
-        @test p2 ∈ C
-        @test div.(p1 + p2, 2) ∈ C
-        @test p1 + 2 * (p2 - p1) ∉ C
+        linesegment = ConvexHull2D([p1, p2])
+        @test p1 ∈ linesegment
+        @test p2 ∈ linesegment
+        @test div.(p1 + p2, 2) ∈ linesegment
+        @test p1 + 2 * (p2 - p1) ∉ linesegment
     end
 
     @testset "triangle" begin
@@ -82,6 +83,47 @@ end
             p = reduce(+, vertices(triangle) .* weights)
             @test p ∈ triangle
         end
+    end
+
+    @testset "rectangle" begin
+        rng = MersenneTwister(1)
+        width = 4
+        height = 3
+        origin = Point(2, 4)
+        rectangle = ConvexHull2D(map(x -> x + origin, SVector(Point(0, 0), Point(width, 0), SVector(width, height), SVector(0, height))))
+        for p in vertices(rectangle)
+            @test p ∈ rectangle
+        end
+        for i = 1 : 100_000
+            p = origin + SVector(width * rand(rng), height * rand(rng))
+            @test p ∈ rectangle
+        end
+        for i = 1 : 10
+            p = origin + SVector(width * rand(rng), height * rand(rng))
+            @test setindex(p, origin[1] + width + rand(rng), 1) ∉ rectangle
+            @test setindex(p, origin[1] - rand(rng), 1) ∉ rectangle
+            @test setindex(p, origin[2] + height + rand(rng), 2) ∉ rectangle
+            @test setindex(p, origin[2] - rand(rng), 2) ∉ rectangle
+        end
+    end
+end
+
+@testset "centroid" begin
+    @testset "point" begin
+        p = Point(1, 2)
+        @test centroid(ConvexHull2D([p])) === Float64.(p)
+    end
+
+    @testset "line segment" begin
+        p1 = SVector(1, 1)
+        p2 = SVector(3, 5)
+        linesegment = ConvexHull2D([p1, p2])
+        @test centroid(linesegment) == Point(2.0, 3.0)
+    end
+
+    @testset "triangle" begin
+        triangle = ConvexHull2D(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
+        @test centroid(triangle) ≈ mean(vertices(triangle)) atol=1e-15
     end
 end
 

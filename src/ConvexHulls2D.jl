@@ -5,6 +5,7 @@ export
     vertices,
     num_vertices,
     area,
+    centroid,
     is_ccw_and_strongly_convex
 
 using LinearAlgebra
@@ -14,6 +15,12 @@ using StaticArrays: arithmetic_closure
 const PointLike{T} = StaticVector{2, T}
 
 unpack(v::PointLike) = @inbounds return v[1], v[2]
+
+@inline function cross2(v1::StaticVector{2}, v2::StaticVector{2})
+    x1, y1 = unpack(v1)
+    x2, y2 = unpack(v2)
+    x1 * y2 - x2 * y1
+end
 
 struct CCWStronglyConvexError <: Exception
 end
@@ -35,12 +42,6 @@ end
 @inline vertices(hull::ConvexHull2D) = hull.vertices
 @inline num_vertices(hull::ConvexHull2D) = length(vertices(hull))
 @inline Base.isempty(hull::ConvexHull2D) = num_vertices(hull) > 0
-
-@inline function cross2(v1::StaticVector{2}, v2::StaticVector{2})
-    x1, y1 = unpack(v1)
-    x2, y2 = unpack(v2)
-    x1 * y2 - y1 * x2
-end
 
 function area(hull::ConvexHull2D{T}) where T
     # https://en.wikipedia.org/wiki/Shoelace_formula
@@ -91,6 +92,31 @@ function Base.in(point::PointLike, hull::ConvexHull2D)
                 δ = vertices[i + 1] - vertices[i]
             end
             return op(cross2(point - vertices[n], δ), 0)
+        end
+    end
+end
+
+function centroid(hull::ConvexHull2D{T}) where T
+    # https://en.wikipedia.org/wiki/Centroid#Of_a_polygon
+    vertices = hull.vertices
+    n = length(vertices)
+    R = arithmetic_closure(T)
+    @inbounds begin
+        if n == 1
+            return R.(vertices[1])
+        elseif n == 2
+            return (vertices[1] + vertices[2]) / 2
+        else
+            c = cross2(vertices[n], vertices[1])
+            centroid = (vertices[n] + vertices[1]) * c
+            double_area = c
+            @simd for i in Base.OneTo(n - 1)
+                c = cross2(vertices[i], vertices[i + 1])
+                centroid += (vertices[i] + vertices[i + 1]) * c
+                double_area += c
+            end
+            centroid /= 3 * double_area
+            return centroid
         end
     end
 end
