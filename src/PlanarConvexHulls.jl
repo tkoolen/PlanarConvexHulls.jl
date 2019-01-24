@@ -142,14 +142,15 @@ function jarvis_march!(hull::ConvexHull{T}, points::AbstractVector{<:PointLike{T
             # Preallocate
             resize!(vertices, n)
 
-            # Initialize with leftmost point
-            # TODO: extract out a function
-            # TODO: could potentially return a middle point of three collinear points
+            # Find an initial hull vertex using lexicographic ordering
             start = last(points)
             for i in Base.OneTo(n - 1)
                 p = points[i]
-                start = ifelse(p[1] < start[1], p, start)
+                if Tuple(p) < Tuple(start)
+                    start = p
+                end
             end
+
             i = 1
             current = start
             while true
