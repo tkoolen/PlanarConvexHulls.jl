@@ -1,6 +1,6 @@
-module ConvexHulls2DTest
+module PlanarConvexHullsTest
 
-using ConvexHulls2D
+using PlanarConvexHulls
 using StaticArrays
 using Test
 using Random
@@ -39,14 +39,14 @@ const Point{T} = SVector{2, T}
 end
 
 @testset "area" begin
-    @test area(ConvexHull2D(SVector((SVector(1, 1),)))) == 0
+    @test area(ConvexHull(SVector((SVector(1, 1),)))) == 0
 
-    @test area(ConvexHull2D(SVector(SVector(1, 1), SVector(2, 3)))) == 0
+    @test area(ConvexHull(SVector(SVector(1, 1), SVector(2, 3)))) == 0
 
-    triangle = ConvexHull2D(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
+    triangle = ConvexHull(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
     @test area(triangle) == 1.0
 
-    square = ConvexHull2D(SVector(Point(1, 1), Point(4, 1), Point(4, 3), Point(1, 3)))
+    square = ConvexHull(SVector(Point(1, 1), Point(4, 1), Point(4, 3), Point(1, 3)))
     @test area(square) == 3 * 2
 end
 
@@ -54,7 +54,7 @@ end
     @testset "point" begin
         rng = MersenneTwister(1)
         p = SVector(1, 1)
-        C = ConvexHull2D(SVector((p,)))
+        C = ConvexHull(SVector((p,)))
         @test p ∈ C
         @test Float64.(p) ∈ C
         for i in 1 : 10
@@ -65,7 +65,7 @@ end
     @testset "line segment" begin
         p1 = SVector(1, 1)
         p2 = SVector(3, 5)
-        linesegment = ConvexHull2D([p1, p2])
+        linesegment = ConvexHull([p1, p2])
         @test p1 ∈ linesegment
         @test p2 ∈ linesegment
         @test div.(p1 + p2, 2) ∈ linesegment
@@ -74,7 +74,7 @@ end
 
     @testset "triangle" begin
         rng = MersenneTwister(1)
-        triangle = ConvexHull2D(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
+        triangle = ConvexHull(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
         for p in vertices(triangle)
             @test p ∈ triangle
         end
@@ -90,7 +90,7 @@ end
         width = 4
         height = 3
         origin = Point(2, 4)
-        rectangle = ConvexHull2D(map(x -> x + origin, SVector(Point(0, 0), Point(width, 0), SVector(width, height), SVector(0, height))))
+        rectangle = ConvexHull(map(x -> x + origin, SVector(Point(0, 0), Point(width, 0), SVector(width, height), SVector(0, height))))
         for p in vertices(rectangle)
             @test p ∈ rectangle
         end
@@ -111,24 +111,24 @@ end
 @testset "centroid" begin
     @testset "point" begin
         p = Point(1, 2)
-        @test centroid(ConvexHull2D([p])) === Float64.(p)
+        @test centroid(ConvexHull([p])) === Float64.(p)
     end
 
     @testset "line segment" begin
         p1 = SVector(1, 1)
         p2 = SVector(3, 5)
-        linesegment = ConvexHull2D([p1, p2])
+        linesegment = ConvexHull([p1, p2])
         @test centroid(linesegment) == Point(2.0, 3.0)
     end
 
     @testset "triangle" begin
-        triangle = ConvexHull2D(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
+        triangle = ConvexHull(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
         @test centroid(triangle) ≈ mean(vertices(triangle)) atol=1e-15
     end
 end
 
 @testset "jarvis_march!" begin
-    hull = ConvexHull2D{Float64}()
+    hull = ConvexHull{Float64}()
     rng = MersenneTwister(2)
     for n = 1 : 10
         for _ = 1 : 10_000

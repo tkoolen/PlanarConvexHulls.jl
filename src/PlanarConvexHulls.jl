@@ -1,7 +1,7 @@
-module ConvexHulls2D
+module PlanarConvexHulls
 
 export
-    ConvexHull2D,
+    ConvexHull,
     vertices,
     num_vertices,
     area,
@@ -17,7 +17,7 @@ const PointLike{T} = StaticVector{2, T}
 
 unpack(v::PointLike) = @inbounds return v[1], v[2]
 
-@inline function cross2(v1::StaticVector{2}, v2::StaticVector{2}) # inlining this breaks things somehow!!!!!!!!!
+@inline function cross2(v1::StaticVector{2}, v2::StaticVector{2}) # inlining this breaks things on Julia 1.0.3!
     x1, y1 = unpack(v1)
     x2, y2 = unpack(v2)
     x1 * y2 - x2 * y1
@@ -29,10 +29,11 @@ function Base.showerror(io::IO, e::CCWStronglyConvexError)
     print(io, "Points are not in counterclockwise order or do not represent a strongly convex set")
 end
 
-struct ConvexHull2D{T, P<:PointLike{T}, V<:AbstractVector{P}}
+struct ConvexHull{T, P<:PointLike{T}, V<:AbstractVector{P}}
     vertices::V
 
-    function ConvexHull2D(vertices::V; check=true) where {T, P<:PointLike{T}, V<:AbstractVector{P}}
+    # TODO: use constructor to compute convex hull?
+    function ConvexHull(vertices::V; check=true) where {T, P<:PointLike{T}, V<:AbstractVector{P}}
         if check
             is_ccw_and_strongly_convex(vertices) || throw(CCWStronglyConvexError())
         end
@@ -40,14 +41,14 @@ struct ConvexHull2D{T, P<:PointLike{T}, V<:AbstractVector{P}}
     end
 end
 
-ConvexHull2D{T}() where {T} = ConvexHull2D(SVector{2, T}[])
+ConvexHull{T}() where {T} = ConvexHull(SVector{2, T}[])
 
-vertices(hull::ConvexHull2D) = hull.vertices
-num_vertices(hull::ConvexHull2D) = length(vertices(hull))
-Base.isempty(hull::ConvexHull2D) = num_vertices(hull) > 0
-Base.empty!(hull::ConvexHull2D) = (empty!(hull.vertices); hull)
+vertices(hull::ConvexHull) = hull.vertices
+num_vertices(hull::ConvexHull) = length(vertices(hull))
+Base.isempty(hull::ConvexHull) = num_vertices(hull) > 0
+Base.empty!(hull::ConvexHull) = (empty!(hull.vertices); hull)
 
-function area(hull::ConvexHull2D{T}) where T
+function area(hull::ConvexHull{T}) where T
     # https://en.wikipedia.org/wiki/Shoelace_formula
     vertices = hull.vertices
     n = length(vertices)
@@ -78,18 +79,20 @@ end
 
 is_ccw_and_strongly_convex(vertices::AbstractVector{<:PointLike}) = is_ordered_and_convex(vertices, >)
 
-function Base.in(point::PointLike, hull::ConvexHull2D)
+function Base.in(point::PointLike, hull::ConvexHull)
     vertices = hull.vertices
     n = length(vertices)
     @inbounds begin
-        if n === 1
+        if n === 0
+            return false
+        elseif n === 1
             return point == hull.vertices[1]
         elseif n === 2
             p′ = point - vertices[1]
             δ = vertices[2] - vertices[1]
             cross2(p′, δ) == 0 && 0 <= p′ ⋅ δ <= sum(x -> x^2, δ)
         else
-            op = <= # may want to put this in a ConvexHull2D type parameter
+            op = <= # may want to put this in a ConvexHull type parameter
             δ = vertices[1] - vertices[n]
             for i in Base.OneTo(n - 1)
                 op(cross2(point - vertices[i], δ), 0) || return false
@@ -100,15 +103,17 @@ function Base.in(point::PointLike, hull::ConvexHull2D)
     end
 end
 
-function centroid(hull::ConvexHull2D{T}) where T
+function centroid(hull::ConvexHull{T}) where T
     # https://en.wikipedia.org/wiki/Centroid#Of_a_polygon
     vertices = hull.vertices
     n = length(vertices)
     R = arithmetic_closure(T)
     @inbounds begin
-        if n == 1
+        if n === 0
+            error()
+        elseif n === 1
             return R.(vertices[1])
-        elseif n == 2
+        elseif n === 2
             return (vertices[1] + vertices[2]) / 2
         else
             c = cross2(vertices[n], vertices[1])
@@ -125,7 +130,7 @@ function centroid(hull::ConvexHull2D{T}) where T
     end
 end
 
-function jarvis_march!(hull::ConvexHull2D{T}, points::AbstractVector{<:PointLike{T}}) where T
+function jarvis_march!(hull::ConvexHull{T}, points::AbstractVector{<:PointLike{T}}) where T
     # Adapted from https://www.algorithm-archive.org/contents/jarvis_march/jarvis_march.html.
     n = length(points)
     vertices = hull.vertices
@@ -138,8 +143,10 @@ function jarvis_march!(hull::ConvexHull2D{T}, points::AbstractVector{<:PointLike
             resize!(vertices, n)
 
             # Initialize with leftmost point
+            # TODO: extract out a function
+            # TODO: could potentially return a middle point of three collinear points
             start = last(points)
-            @simd for i in Base.OneTo(n - 1)
+            for i in Base.OneTo(n - 1)
                 p = points[i]
                 start = ifelse(p[1] < start[1], p, start)
             end
@@ -156,6 +163,10 @@ function jarvis_march!(hull::ConvexHull2D{T}, points::AbstractVector{<:PointLike
                     p = points[i]
                     δ = p - current
                     c = cross2(δnext, δ)
+
+                    # Note the last clause here, which ensures strong convexity in the presence of
+                    # collinear points by accepting `p` if it's farther away from `current` than
+                    # `next`.
                     if next == current || c < 0 || (c == 0 && δ ⋅ δ > δnext ⋅ δnext)
                         next = p
                         δnext = δ
