@@ -9,11 +9,11 @@ using Statistics
 
 const Point{T} = SVector{2, T}
 
-@testset "is_ccw_and_strongly_convex" begin
-    @test is_ccw_and_strongly_convex([Point(1, 2)])
-    @test is_ccw_and_strongly_convex([Point(1, 2), Point(3, 4)])
-    @test is_ccw_and_strongly_convex([Point(1, 2), Point(3, 4), Point(2, 4)])
-    @test !is_ccw_and_strongly_convex([Point(1, 2), Point(3, 4), Point(2, 3)]) # on a line
+@testset "is_ordered_and_convex" begin
+    @test is_ordered_and_convex([Point(1, 2)], CCW)
+    @test is_ordered_and_convex([Point(1, 2), Point(3, 4)], CCW)
+    @test is_ordered_and_convex([Point(1, 2), Point(3, 4), Point(2, 4)], CCW)
+    @test !is_ordered_and_convex([Point(1, 2), Point(3, 4), Point(2, 3)], CCW) # on a line
 
     v1 = Point(0, 0)
     v2 = Point(1, 0)
@@ -22,8 +22,9 @@ const Point{T} = SVector{2, T}
     vertices = [v1, v2, v3, v4]
     for i in 0 : 4
         shifted = circshift(vertices, i)
-        @test is_ccw_and_strongly_convex(shifted)
-        @test !is_ccw_and_strongly_convex(reverse(shifted))
+        @test is_ordered_and_convex(shifted, CCW)
+        @test !is_ordered_and_convex(reverse(shifted), CCW)
+        @test is_ordered_and_convex(reverse(shifted), CW)
     end
 
     for i in eachindex(vertices)
@@ -32,21 +33,21 @@ const Point{T} = SVector{2, T}
                 vertices′ = copy(vertices)
                 vertices′[i] = vertices[j]
                 vertices′[j] = vertices[i]
-                @test !is_ccw_and_strongly_convex(vertices′)
+                @test !is_ordered_and_convex(vertices′, CCW)
             end
         end
     end
 end
 
 @testset "area" begin
-    @test area(ConvexHull(SVector((SVector(1, 1),)))) == 0
+    @test area(ConvexHull{CCW}(SVector((SVector(1, 1),)))) == 0
 
-    @test area(ConvexHull(SVector(SVector(1, 1), SVector(2, 3)))) == 0
+    @test area(ConvexHull{CCW}(SVector(SVector(1, 1), SVector(2, 3)))) == 0
 
-    triangle = ConvexHull(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
+    triangle = ConvexHull{CCW}(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
     @test area(triangle) == 1.0
 
-    square = ConvexHull(SVector(Point(1, 1), Point(4, 1), Point(4, 3), Point(1, 3)))
+    square = ConvexHull{CCW}(SVector(Point(1, 1), Point(4, 1), Point(4, 3), Point(1, 3)))
     @test area(square) == 3 * 2
 end
 
@@ -54,7 +55,7 @@ end
     @testset "point" begin
         rng = MersenneTwister(1)
         p = SVector(1, 1)
-        C = ConvexHull(SVector((p,)))
+        C = ConvexHull{CCW}(SVector((p,)))
         @test p ∈ C
         @test Float64.(p) ∈ C
         for i in 1 : 10
@@ -65,7 +66,7 @@ end
     @testset "line segment" begin
         p1 = SVector(1, 1)
         p2 = SVector(3, 5)
-        linesegment = ConvexHull([p1, p2])
+        linesegment = ConvexHull{CCW}([p1, p2])
         @test p1 ∈ linesegment
         @test p2 ∈ linesegment
         @test div.(p1 + p2, 2) ∈ linesegment
@@ -74,7 +75,7 @@ end
 
     @testset "triangle" begin
         rng = MersenneTwister(1)
-        triangle = ConvexHull(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
+        triangle = ConvexHull{CCW}(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
         for p in vertices(triangle)
             @test p ∈ triangle
         end
@@ -90,7 +91,7 @@ end
         width = 4
         height = 3
         origin = Point(2, 4)
-        rectangle = ConvexHull(map(x -> x + origin, SVector(Point(0, 0), Point(width, 0), SVector(width, height), SVector(0, height))))
+        rectangle = ConvexHull{CCW}(map(x -> x + origin, SVector(Point(0, 0), Point(width, 0), SVector(width, height), SVector(0, height))))
         for p in vertices(rectangle)
             @test p ∈ rectangle
         end
@@ -111,42 +112,42 @@ end
 @testset "centroid" begin
     @testset "point" begin
         p = Point(1, 2)
-        @test centroid(ConvexHull([p])) === Float64.(p)
+        @test centroid(ConvexHull{CCW}([p])) === Float64.(p)
     end
 
     @testset "line segment" begin
         p1 = SVector(1, 1)
         p2 = SVector(3, 5)
-        linesegment = ConvexHull([p1, p2])
+        linesegment = ConvexHull{CCW}([p1, p2])
         @test centroid(linesegment) == Point(2.0, 3.0)
     end
 
     @testset "triangle" begin
-        triangle = ConvexHull(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
+        triangle = ConvexHull{CCW}(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
         @test centroid(triangle) ≈ mean(vertices(triangle)) atol=1e-15
     end
 end
 
 function convex_hull_test(hullfun!)
-    @testset "random" begin
-        hull = ConvexHull{Float64}()
+    @testset "random" for order in [CCW, CW]
+        hull = ConvexHull{order, Float64}()
         rng = MersenneTwister(2)
         for n = 1 : 10
             for _ = 1 : 10_000
                 points = [rand(rng, Point{Float64}) for i = 1 : n]
                 hullfun!(hull, points)
-                @test is_ccw_and_strongly_convex(vertices(hull))
+                @test is_ordered_and_convex(vertices(hull), order)
             end
         end
     end
 
-    @testset "collinear input" begin
-        hull = ConvexHull{Float64}()
+    @testset "collinear input" for order in [CCW, CW]
+        hull = ConvexHull{order, Float64}()
         points = [Point(0., 0.), Point(0., 1.), Point(0., 2.), Point(1., 0.), Point(1., 1.), Point(1., 2.)]
         for i = 1 : 10
             shuffle!(points)
             hullfun!(hull, points)
-            @test is_ccw_and_strongly_convex(vertices(hull))
+            @test is_ordered_and_convex(vertices(hull), order)
             @test isempty(symdiff(vertices(hull), [Point(0., 0.), Point(1., 0.), Point(1., 2.), Point(0., 2.)]))
         end
     end
