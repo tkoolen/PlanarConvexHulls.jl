@@ -128,14 +128,14 @@ end
     end
 end
 
-function convex_hull_test(hullfun!)
+function convex_hull_alg_test(hull_alg!)
     @testset "random" for order in [CCW, CW]
         hull = ConvexHull{order, Float64}()
         rng = MersenneTwister(2)
         for n = 1 : 10
             for _ = 1 : 10_000
                 points = [rand(rng, Point{Float64}) for i = 1 : n]
-                hullfun!(hull, points)
+                hull_alg!(hull, points)
                 @test is_ordered_and_convex(vertices(hull), order)
             end
         end
@@ -146,7 +146,7 @@ function convex_hull_test(hullfun!)
         points = [Point(0., 0.), Point(0., 1.), Point(0., 2.), Point(1., 0.), Point(1., 1.), Point(1., 2.)]
         for i = 1 : 10
             shuffle!(points)
-            hullfun!(hull, points)
+            hull_alg!(hull, points)
             @test is_ordered_and_convex(vertices(hull), order)
             @test isempty(symdiff(vertices(hull), [Point(0., 0.), Point(1., 0.), Point(1., 2.), Point(0., 2.)]))
         end
@@ -154,7 +154,34 @@ function convex_hull_test(hullfun!)
 end
 
 @testset "jarvis_march!" begin
-    convex_hull_test(jarvis_march!)
+    convex_hull_alg_test(jarvis_march!)
+end
+
+@testset "closest_point" for order in [CCW, CW]
+    hull = ConvexHull{order, Float64}()
+    rng = MersenneTwister(3)
+    for n = 1 : 10
+        for _ = 1 : 100
+            points = [rand(rng, Point{Float64}) for i = 1 : n]
+            jarvis_march!(hull, points)
+
+            for point in vertices(hull)
+                closest = closest_point(point, hull)
+                @test closest == point
+            end
+
+            for _ = 1 : 100
+                point = rand(rng, Point{Float64})
+                closest = closest_point(point, hull)
+                if point ∈ hull
+                    @test closest == point
+                else
+                    closest_to_closest = closest_point(closest, hull)
+                    @test closest_to_closest ≈ closest atol=1e-14
+                end
+            end
+        end
+    end
 end
 
 end # module

@@ -9,6 +9,7 @@ export
     area,
     centroid,
     is_ordered_and_convex,
+    closest_point,
     jarvis_march!
 
 using LinearAlgebra
@@ -22,7 +23,8 @@ include("core_types.jl")
 include("area.jl")
 include("convexity_test.jl")
 include("centroid.jl")
-include("point_in_hull.jl")
+include("membership.jl")
+include("closest_point.jl")
 include("jarvis_march.jl")
 
 end # module
