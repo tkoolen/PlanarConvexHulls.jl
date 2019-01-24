@@ -10,7 +10,7 @@ function Base.in(point::PointLike, hull::ConvexHull)
         elseif n === 2
             p′ = point - vertices[1]
             δ = vertices[2] - vertices[1]
-            cross2(p′, δ) == 0 && 0 <= p′ ⋅ δ <= sum(x -> x^2, δ)
+            cross2(p′, δ) == 0 && 0 <= p′ ⋅ δ <= δ ⋅ δ
         else
             δ = vertices[1] - vertices[n]
             for i in Base.OneTo(n - 1)

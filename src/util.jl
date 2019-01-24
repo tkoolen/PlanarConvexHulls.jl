@@ -5,3 +5,5 @@ unpack(v::StaticVector{2}) = @inbounds return v[1], v[2]
     x2, y2 = unpack(v2)
     x1 * y2 - x2 * y1
 end
+
+normsquared(x) = sum(y -> y^2, x)

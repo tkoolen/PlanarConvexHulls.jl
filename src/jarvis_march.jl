@@ -11,7 +11,7 @@ function jarvis_march!(hull::ConvexHull, points::AbstractVector{<:PointLike})
             # Preallocate
             resize!(vertices, n)
 
-            # Find an initial hull vertex using lexicographic ordering
+            # Find an initial hull vertex using lexicographic ordering.
             start = last(points)
             for i in Base.OneTo(n - 1)
                 p = points[i]
@@ -26,7 +26,7 @@ function jarvis_march!(hull::ConvexHull, points::AbstractVector{<:PointLike})
                 # Add point
                 vertices[i] = current
 
-                # Next point is the one with with largest internal angle
+                # Next point is the one with extremal internal angle.
                 next = last(points)
                 δnext = next - current
                 for i in Base.OneTo(n - 1)
@@ -47,7 +47,7 @@ function jarvis_march!(hull::ConvexHull, points::AbstractVector{<:PointLike})
                 i += 1
             end
 
-            # Shrink to computed number of vertices
+            # Shrink to computed number of vertices.
             resize!(vertices, i)
         end
     end

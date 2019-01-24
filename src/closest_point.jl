@@ -17,12 +17,12 @@ function closest_point(p::PointLike, hull::ConvexHull)
                 p′ = p - v1
                 strictly_outside_edge = op(cross2(p′, δ), 0)
                 if strictly_outside_edge
-                    # Find closest point to current edge
+                    # Find closest point to current edge.
                     λ = clamp(p′ ⋅ δ / (δ ⋅ δ), false, true)
                     closest_to_edge = v1 + λ * δ
 
-                    # Accept if previous candidate was p itself or if it's closer
-                    if closest == p || sum(x -> x^2, closest_to_edge - p) < sum(x -> x^2, closest - p)
+                    # Accept if previous candidate was p itself or if it's closer.
+                    if closest == p || normsquared(closest_to_edge - p) < normsquared(closest - p)
                         closest = closest_to_edge
                     end
                 end
