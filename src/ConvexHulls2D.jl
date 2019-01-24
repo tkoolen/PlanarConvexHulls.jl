@@ -127,7 +127,6 @@ end
 
 function jarvis_march!(hull::ConvexHull2D{T}, points::AbstractVector{<:PointLike{T}}) where T
     # Adapted from https://www.algorithm-archive.org/contents/jarvis_march/jarvis_march.html.
-    empty!(hull)
     n = length(points)
     vertices = hull.vertices
     @inbounds begin
@@ -135,20 +134,20 @@ function jarvis_march!(hull::ConvexHull2D{T}, points::AbstractVector{<:PointLike
             resize!(vertices, n)
             vertices .= points
         else
+            # Preallocate
+            resize!(vertices, n)
+
             # Initialize with leftmost point
             start = last(points)
             @simd for i in Base.OneTo(n - 1)
                 p = points[i]
                 start = ifelse(p[1] < start[1], p, start)
             end
-
+            i = 1
             current = start
             while true
                 # Add point
-                push!(vertices, current)
-
-                # @assert is_ccw_and_strongly_convex(vertices)
-                # @assert length(vertices) <= n
+                vertices[i] = current
 
                 # Next point is the one with with largest internal angle
                 next = last(points)
@@ -156,14 +155,19 @@ function jarvis_march!(hull::ConvexHull2D{T}, points::AbstractVector{<:PointLike
                 for i in Base.OneTo(n - 1)
                     p = points[i]
                     δ = p - current
-                    if next == current || cross2(δnext, δ) < 0
+                    c = cross2(δnext, δ)
+                    if next == current || c < 0 || (c == 0 && δ ⋅ δ > δnext ⋅ δnext)
                         next = p
                         δnext = δ
                     end
                 end
                 current = next
                 current == first(vertices) && break
+                i += 1
             end
+
+            # Shrink to computed number of vertices
+            resize!(vertices, i)
         end
     end
     return hull
