@@ -10,7 +10,9 @@ export
     centroid,
     is_ordered_and_convex,
     closest_point,
-    jarvis_march!
+    jarvis_march!,
+    hrep,
+    hrep!
 
 using LinearAlgebra
 using StaticArrays
@@ -26,5 +28,6 @@ include("centroid.jl")
 include("membership.jl")
 include("closest_point.jl")
 include("jarvis_march.jl")
+include("hrep.jl")
 
 end # module

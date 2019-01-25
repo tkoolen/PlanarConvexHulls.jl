@@ -15,10 +15,11 @@ end
 ConvexHull{O, T}() where {O<:VertexOrder, T} = ConvexHull{O}(SVector{2, T}[], check=false)
 
 Base.eltype(::Type{<:ConvexHull{<:Any, T}}) where {T} = T
-order(::Type{<:ConvexHull{O}}) where {O} = O
-order(hull::ConvexHull) = order(typeof(hull))
+vertex_order(::Type{<:ConvexHull{O}}) where {O} = O
+vertex_order(hull::ConvexHull) = vertex_order(typeof(hull))
+edge_normal_sign_operator(hull::ConvexHull) = edge_normal_sign_operator(vertex_order(hull))
 
-orientation_comparator(hull::ConvexHull) = orientation_comparator(order(hull))
+orientation_comparator(hull::ConvexHull) = orientation_comparator(vertex_order(hull))
 vertices(hull::ConvexHull) = hull.vertices
 num_vertices(hull::ConvexHull) = length(vertices(hull))
 Base.isempty(hull::ConvexHull) = num_vertices(hull) > 0

@@ -129,7 +129,7 @@ end
 end
 
 function convex_hull_alg_test(hull_alg!)
-    @testset "random" for order in [CCW, CW]
+    @testset "random $order" for order in [CCW, CW]
         hull = ConvexHull{order, Float64}()
         rng = MersenneTwister(2)
         for n = 1 : 10
@@ -142,7 +142,7 @@ function convex_hull_alg_test(hull_alg!)
         end
     end
 
-    @testset "collinear input" for order in [CCW, CW]
+    @testset "collinear input $order" for order in [CCW, CW]
         hull = ConvexHull{order, Float64}()
         points = [Point(0., 0.), Point(0., 1.), Point(0., 2.), Point(1., 0.), Point(1., 1.), Point(1., 2.)]
         for i = 1 : 10
@@ -158,7 +158,7 @@ end
     convex_hull_alg_test(jarvis_march!)
 end
 
-@testset "closest_point" for order in [CCW, CW]
+@testset "closest_point $order" for order in [CCW, CW]
     hull = ConvexHull{order, Float64}()
     rng = MersenneTwister(3)
     for n = 1 : 10
@@ -183,23 +183,49 @@ end
             end
         end
     end
+
+    # visualize = true
+    # if visualize
+    #     flush(stdout)
+    #     hull = ConvexHull{CCW, Float64}()
+    #     rng = MersenneTwister(3)
+    #     n = 5
+    #     points = [rand(rng, Point{Float64}) for i = 1 : n]
+    #     jarvis_march!(hull, points)
+    #     projections = map(1 : 1_000_000) do _
+    #         closest_point(rand(rng, Point{Float64}), hull)
+    #     end
+    #     plt = scatterplot(getindex.(projections, 1), getindex.(projections, 2))
+    #     scatterplot!(plt, getindex.(vertices(hull), 1), getindex.(vertices(hull), 2), color = :red)
+    #     display(plt)
+    # end
 end
 
-visualize = true
-if visualize
-    flush(stdout)
-    using UnicodePlots
-    hull = ConvexHull{CCW, Float64}()
-    rng = MersenneTwister(3)
-    n = 5
-    points = [rand(rng, Point{Float64}) for i = 1 : n]
-    jarvis_march!(hull, points)
-    projections = map(1 : 1_000_000) do _
-        closest_point(rand(rng, Point{Float64}), hull)
+function hreptest(hull::H, rng) where {H<:ConvexHull}
+    A, b = hrep(hull)
+    for _ = 1 : 100
+        testpoint = rand(rng, Point{Float64})
+        @test (testpoint ∈ hull) == all(A * testpoint .<= b)
     end
-    plt = scatterplot(getindex.(projections, 1), getindex.(projections, 2))
-    scatterplot!(plt, getindex.(vertices(hull), 1), getindex.(vertices(hull), 2), color = :red)
-    display(plt)
+    if Length(vertices(hull)) !== Length{StaticArrays.Dynamic()}()
+        @test(@allocated(hrep(hull)) == 0)
+    end
+end
+
+@testset "hrep $order" for order in [CCW, CW]
+    dynamichull = ConvexHull{order, Float64}()
+    rng = MersenneTwister(4)
+    for n = 2 : 10
+        for _ = 1 : 100
+            points = [rand(rng, Point{Float64}) for i = 1 : n]
+            jarvis_march!(dynamichull, points)
+            hreptest(dynamichull, rng)
+
+            h = num_vertices(dynamichull)
+            statichull = ConvexHull{order}(SVector{h}(vertices(dynamichull)))
+            hreptest(statichull, rng)
+        end
+    end
 end
 
 @testset "benchmarks" begin
