@@ -1,3 +1,6 @@
+import Pkg
+Pkg.activate(@__DIR__)
+
 using BenchmarkTools
 using PlanarConvexHulls
 using StaticArrays

@@ -133,6 +133,7 @@ function convex_hull_alg_test(hull_alg!)
         hull = ConvexHull{order, Float64}()
         rng = MersenneTwister(2)
         for n = 1 : 10
+            sizehint!(hull, n) # just to get code coverage
             for _ = 1 : 10_000
                 points = [rand(rng, Point{Float64}) for i = 1 : n]
                 hull_alg!(hull, points)
@@ -199,6 +200,10 @@ if visualize
     plt = scatterplot(getindex.(projections, 1), getindex.(projections, 2))
     scatterplot!(plt, getindex.(vertices(hull), 1), getindex.(vertices(hull), 2), color = :red)
     display(plt)
+end
+
+@testset "benchmarks" begin
+    include(joinpath("..", "perf", "runbenchmarks.jl"))
 end
 
 end # module
