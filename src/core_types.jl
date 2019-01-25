@@ -23,3 +23,4 @@ vertices(hull::ConvexHull) = hull.vertices
 num_vertices(hull::ConvexHull) = length(vertices(hull))
 Base.isempty(hull::ConvexHull) = num_vertices(hull) > 0
 Base.empty!(hull::ConvexHull) = (empty!(hull.vertices); hull)
+Base.sizehint!(hull::ConvexHull, n) = (sizehint!(hull.vertices, n); hull)
