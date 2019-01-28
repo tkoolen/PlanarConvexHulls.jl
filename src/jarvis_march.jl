@@ -3,7 +3,7 @@ function jarvis_march!(hull::ConvexHull, points::AbstractVector{<:PointLike})
     op = orientation_comparator(hull)
     n = length(points)
     vertices = hull.vertices
-    @inbounds begin
+    begin
         if n <= 2
             resize!(vertices, n)
             vertices .= points
@@ -45,6 +45,14 @@ function jarvis_march!(hull::ConvexHull, points::AbstractVector{<:PointLike})
                 current = next
                 current == first(vertices) && break
                 i += 1
+                if i > n
+                    @show i
+                    @show n
+                    @show points
+                    @show vertices
+                    @show current
+                    error()
+                end
             end
 
             # Shrink to computed number of vertices.
