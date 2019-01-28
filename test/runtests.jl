@@ -9,11 +9,11 @@ using Statistics
 
 const Point{T} = SVector{2, T}
 
-@testset "is_ordered_and_convex" begin
-    @test is_ordered_and_convex([Point(1, 2)], CCW)
-    @test is_ordered_and_convex([Point(1, 2), Point(3, 4)], CCW)
-    @test is_ordered_and_convex([Point(1, 2), Point(3, 4), Point(2, 4)], CCW)
-    @test !is_ordered_and_convex([Point(1, 2), Point(3, 4), Point(2, 3)], CCW) # on a line
+@testset "is_ordered_and_strongly_convex" begin
+    @test is_ordered_and_strongly_convex([Point(1, 2)], CCW)
+    @test is_ordered_and_strongly_convex([Point(1, 2), Point(3, 4)], CCW)
+    @test is_ordered_and_strongly_convex([Point(1, 2), Point(3, 4), Point(2, 4)], CCW)
+    @test !is_ordered_and_strongly_convex([Point(1, 2), Point(3, 4), Point(2, 3)], CCW) # on a line
 
     v1 = Point(0, 0)
     v2 = Point(1, 0)
@@ -22,9 +22,9 @@ const Point{T} = SVector{2, T}
     vertices = [v1, v2, v3, v4]
     for i in 0 : 4
         shifted = circshift(vertices, i)
-        @test is_ordered_and_convex(shifted, CCW)
-        @test !is_ordered_and_convex(reverse(shifted), CCW)
-        @test is_ordered_and_convex(reverse(shifted), CW)
+        @test is_ordered_and_strongly_convex(shifted, CCW)
+        @test !is_ordered_and_strongly_convex(reverse(shifted), CCW)
+        @test is_ordered_and_strongly_convex(reverse(shifted), CW)
     end
 
     for i in eachindex(vertices)
@@ -33,7 +33,7 @@ const Point{T} = SVector{2, T}
                 vertices′ = copy(vertices)
                 vertices′[i] = vertices[j]
                 vertices′[j] = vertices[i]
-                @test !is_ordered_and_convex(vertices′, CCW)
+                @test !is_ordered_and_strongly_convex(vertices′, CCW)
             end
         end
     end
@@ -137,7 +137,7 @@ function convex_hull_alg_test(hull_alg!)
             for _ = 1 : 10_000
                 points = [rand(rng, Point{Float64}) for i = 1 : n]
                 hull_alg!(hull, points)
-                @test is_ordered_and_convex(vertices(hull), order)
+                @test is_ordered_and_strongly_convex(vertices(hull), order)
             end
         end
     end
@@ -148,7 +148,7 @@ function convex_hull_alg_test(hull_alg!)
         for i = 1 : 10
             shuffle!(points)
             hull_alg!(hull, points)
-            @test is_ordered_and_convex(vertices(hull), order)
+            @test is_ordered_and_strongly_convex(vertices(hull), order)
             @test isempty(symdiff(vertices(hull), [Point(0., 0.), Point(1., 0.), Point(1., 2.), Point(0., 2.)]))
         end
     end

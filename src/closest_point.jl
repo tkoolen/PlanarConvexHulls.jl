@@ -1,3 +1,9 @@
+"""
+$(SIGNATURES)
+
+Find the closest point to `p` within `hull`. If `p` is inside `hull`,
+`p` itself is returned.
+"""
 function closest_point(p::PointLike, hull::ConvexHull)
     op = orientation_comparator(hull)
     vertices = hull.vertices

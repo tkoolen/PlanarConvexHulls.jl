@@ -1,3 +1,8 @@
+"""
+$(SIGNATURES)
+
+Return whether `point` is in `hull`.
+"""
 function Base.in(point::PointLike, hull::ConvexHull)
     op = orientation_comparator(hull)
     vertices = hull.vertices
