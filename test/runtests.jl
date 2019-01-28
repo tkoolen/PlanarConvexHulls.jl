@@ -1,235 +1,94 @@
 module PlanarConvexHullsTest
 
-using PlanarConvexHulls
 using StaticArrays
-using Test
-using Random
 using LinearAlgebra
-using Statistics
 
-const Point{T} = SVector{2, T}
+abstract type VertexOrder end
+orientation_comparator(o::VertexOrder) = orientation_comparator(typeof(o))
 
-@testset "is_ordered_and_convex" begin
-    @test is_ordered_and_convex([Point(1, 2)], CCW)
-    @test is_ordered_and_convex([Point(1, 2), Point(3, 4)], CCW)
-    @test is_ordered_and_convex([Point(1, 2), Point(3, 4), Point(2, 4)], CCW)
-    @test !is_ordered_and_convex([Point(1, 2), Point(3, 4), Point(2, 3)], CCW) # on a line
+struct CCW <: VertexOrder end
+orientation_comparator(::Type{CCW}) = >
 
-    v1 = Point(0, 0)
-    v2 = Point(1, 0)
-    v3 = Point(1, 1)
-    v4 = Point(0, 1)
-    vertices = [v1, v2, v3, v4]
-    for i in 0 : 4
-        shifted = circshift(vertices, i)
-        @test is_ordered_and_convex(shifted, CCW)
-        @test !is_ordered_and_convex(reverse(shifted), CCW)
-        @test is_ordered_and_convex(reverse(shifted), CW)
+unpack(v::StaticVector{2}) = @inbounds return v[1], v[2]
+
+@inline function cross2(v1::StaticVector{2}, v2::StaticVector{2})
+    x1, y1 = v1[1], v1[2]
+    x2, y2 = v2[1], v2[2]
+    x1 * y2 - x2 * y1
+end
+
+struct ConvexHull{O<:VertexOrder, T, P<:StaticVector{2, T}, V<:AbstractVector{P}}
+    vertices::V
+
+    function ConvexHull{O}(vertices::V; check=true) where {O<:VertexOrder, T, P<:StaticVector{2, T}, V<:AbstractVector{P}}
+        new{O, T, P, V}(vertices)
     end
+end
 
-    for i in eachindex(vertices)
-        for j in eachindex(vertices)
-            if i != j
-                vertices′ = copy(vertices)
-                vertices′[i] = vertices[j]
-                vertices′[j] = vertices[i]
-                @test !is_ordered_and_convex(vertices′, CCW)
+ConvexHull{O, T}() where {O<:VertexOrder, T} = ConvexHull{O}(SVector{2, T}[], check=false)
+vertex_order(::Type{<:ConvexHull{O}}) where {O} = O
+vertex_order(hull::ConvexHull) = vertex_order(typeof(hull))
+orientation_comparator(hull::ConvexHull) = orientation_comparator(vertex_order(hull))
+
+function jarvis_march!(hull::ConvexHull, points::AbstractVector{<:StaticVector{2}})
+    # Adapted from https://www.algorithm-archive.org/contents/jarvis_march/jarvis_march.html.
+    op = orientation_comparator(hull)
+    # @show op # Uncommenting this makes tests pass with code coverage on!
+    n = length(points)
+    vertices = hull.vertices
+    if n <= 2
+        error()
+    else
+        # Preallocate
+        resize!(vertices, n)
+
+        # Find an initial hull vertex using lexicographic ordering.
+        start = last(points)
+        for i in Base.OneTo(n - 1)
+            p = points[i]
+            if Tuple(p) < Tuple(start)
+                start = p
             end
         end
-    end
-end
 
-@testset "area" begin
-    @test area(ConvexHull{CCW}(SVector((SVector(1, 1),)))) == 0
+        i = 1
+        current = start
+        while true
+            # Add point
+            vertices[i] = current
 
-    @test area(ConvexHull{CCW}(SVector(SVector(1, 1), SVector(2, 3)))) == 0
+            # Next point is the one with extremal internal angle.
+            next = last(points)
+            δnext = next - current
+            for i in Base.OneTo(n - 1)
+                p = points[i]
+                δ = p - current
+                c = cross2(δnext, δ)
 
-    triangle = ConvexHull{CCW}(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
-    @test area(triangle) == 1.0
-
-    square = ConvexHull{CCW}(SVector(Point(1, 1), Point(4, 1), Point(4, 3), Point(1, 3)))
-    @test area(square) == 3 * 2
-end
-
-@testset "in" begin
-    @testset "point" begin
-        rng = MersenneTwister(1)
-        p = SVector(1, 1)
-        C = ConvexHull{CCW}(SVector((p,)))
-        @test p ∈ C
-        @test Float64.(p) ∈ C
-        for i in 1 : 10
-            @test p + SVector(randn(rng), randn(rng)) ∉ C
-        end
-    end
-
-    @testset "line segment" begin
-        p1 = SVector(1, 1)
-        p2 = SVector(3, 5)
-        linesegment = ConvexHull{CCW}([p1, p2])
-        @test p1 ∈ linesegment
-        @test p2 ∈ linesegment
-        @test div.(p1 + p2, 2) ∈ linesegment
-        @test p1 + 2 * (p2 - p1) ∉ linesegment
-    end
-
-    @testset "triangle" begin
-        rng = MersenneTwister(1)
-        triangle = ConvexHull{CCW}(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
-        for p in vertices(triangle)
-            @test p ∈ triangle
-        end
-        for i = 1 : 100_000
-            weights = normalize(rand(rng, SVector{3}), 1)
-            p = reduce(+, vertices(triangle) .* weights)
-            @test p ∈ triangle
-        end
-    end
-
-    @testset "rectangle" begin
-        rng = MersenneTwister(1)
-        width = 4
-        height = 3
-        origin = Point(2, 4)
-        rectangle = ConvexHull{CCW}(map(x -> x + origin, SVector(Point(0, 0), Point(width, 0), SVector(width, height), SVector(0, height))))
-        for p in vertices(rectangle)
-            @test p ∈ rectangle
-        end
-        for i = 1 : 100_000
-            p = origin + SVector(width * rand(rng), height * rand(rng))
-            @test p ∈ rectangle
-        end
-        for i = 1 : 10
-            p = origin + SVector(width * rand(rng), height * rand(rng))
-            @test setindex(p, origin[1] + width + rand(rng), 1) ∉ rectangle
-            @test setindex(p, origin[1] - rand(rng), 1) ∉ rectangle
-            @test setindex(p, origin[2] + height + rand(rng), 2) ∉ rectangle
-            @test setindex(p, origin[2] - rand(rng), 2) ∉ rectangle
-        end
-    end
-end
-
-@testset "centroid" begin
-    @testset "point" begin
-        p = Point(1, 2)
-        @test centroid(ConvexHull{CCW}([p])) === Float64.(p)
-    end
-
-    @testset "line segment" begin
-        p1 = SVector(1, 1)
-        p2 = SVector(3, 5)
-        linesegment = ConvexHull{CCW}([p1, p2])
-        @test centroid(linesegment) == Point(2.0, 3.0)
-    end
-
-    @testset "triangle" begin
-        triangle = ConvexHull{CCW}(SVector(Point(1, 1), Point(2, 1), Point(3, 3)))
-        @test centroid(triangle) ≈ mean(vertices(triangle)) atol=1e-15
-    end
-end
-
-function convex_hull_alg_test(hull_alg!)
-    @testset "random $order" for order in [CCW, CW]
-        hull = ConvexHull{order, Float64}()
-        rng = MersenneTwister(2)
-        for n = 1 : 10
-            sizehint!(hull, n) # just to get code coverage
-            for _ = 1 : 10_000
-                points = [rand(rng, Point{Float64}) for i = 1 : n]
-                hull_alg!(hull, points)
-                @test is_ordered_and_convex(vertices(hull), order)
-            end
-        end
-    end
-
-    @testset "collinear input $order" for order in [CCW, CW]
-        hull = ConvexHull{order, Float64}()
-        points = [Point(0., 0.), Point(0., 1.), Point(0., 2.), Point(1., 0.), Point(1., 1.), Point(1., 2.)]
-        for i = 1 : 10
-            shuffle!(points)
-            hull_alg!(hull, points)
-            @test is_ordered_and_convex(vertices(hull), order)
-            @test isempty(symdiff(vertices(hull), [Point(0., 0.), Point(1., 0.), Point(1., 2.), Point(0., 2.)]))
-        end
-    end
-end
-
-@testset "jarvis_march!" begin
-    convex_hull_alg_test(jarvis_march!)
-end
-
-@testset "closest_point $order" for order in [CCW, CW]
-    hull = ConvexHull{order, Float64}()
-    rng = MersenneTwister(3)
-    for n = 1 : 10
-        for _ = 1 : 100
-            points = [rand(rng, Point{Float64}) for i = 1 : n]
-            jarvis_march!(hull, points)
-
-            for point in vertices(hull)
-                closest = closest_point(point, hull)
-                @test closest == point
-            end
-
-            for _ = 1 : 100
-                point = rand(rng, Point{Float64})
-                closest = closest_point(point, hull)
-                if point ∈ hull
-                    @test closest == point
-                else
-                    closest_to_closest = closest_point(closest, hull)
-                    @test closest_to_closest ≈ closest atol=1e-14
+                # Note the last clause here, which ensures strong convexity in the presence of
+                # collinear points by accepting `p` if it's farther away from `current` than
+                # `next`.
+                if next == current || op(0, c) || (c == 0 && δ ⋅ δ > δnext ⋅ δnext)
+                    next = p
+                    δnext = δ
                 end
             end
+            current = next
+            current == first(vertices) && break
+            i += 1
+            if i > n
+                error("Should never happen")
+            end
         end
-    end
 
-    # visualize = true
-    # if visualize
-    #     flush(stdout)
-    #     hull = ConvexHull{CCW, Float64}()
-    #     rng = MersenneTwister(3)
-    #     n = 5
-    #     points = [rand(rng, Point{Float64}) for i = 1 : n]
-    #     jarvis_march!(hull, points)
-    #     projections = map(1 : 1_000_000) do _
-    #         closest_point(rand(rng, Point{Float64}), hull)
-    #     end
-    #     plt = scatterplot(getindex.(projections, 1), getindex.(projections, 2))
-    #     scatterplot!(plt, getindex.(vertices(hull), 1), getindex.(vertices(hull), 2), color = :red)
-    #     display(plt)
-    # end
+        # Shrink to computed number of vertices.
+        resize!(vertices, i)
+    end
+    return hull
 end
 
-function hreptest(hull::H, rng) where {H<:ConvexHull}
-    A, b = hrep(hull)
-    for _ = 1 : 100
-        testpoint = rand(rng, Point{Float64})
-        @test (testpoint ∈ hull) == all(A * testpoint .<= b)
-    end
-    if Length(vertices(hull)) !== Length{StaticArrays.Dynamic()}()
-        @test(@allocated(hrep(hull)) == 0)
-    end
-end
-
-@testset "hrep $order" for order in [CCW, CW]
-    dynamichull = ConvexHull{order, Float64}()
-    rng = MersenneTwister(4)
-    for n = 2 : 10
-        for _ = 1 : 100
-            points = [rand(rng, Point{Float64}) for i = 1 : n]
-            jarvis_march!(dynamichull, points)
-            hreptest(dynamichull, rng)
-
-            h = num_vertices(dynamichull)
-            statichull = ConvexHull{order}(SVector{h}(vertices(dynamichull)))
-            hreptest(statichull, rng)
-        end
-    end
-end
-
-@testset "benchmarks" begin
-    include(joinpath("..", "perf", "runbenchmarks.jl"))
-end
+hull = ConvexHull{CCW, Float64}()
+points = StaticArrays.SArray{Tuple{2},Float64,1,2}[[0.0271377, 0.785383], [0.689278, 0.242258], [0.711323, 0.403459]]
+jarvis_march!(hull, points)
 
 end # module
