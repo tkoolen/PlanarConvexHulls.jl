@@ -1,5 +1,10 @@
+"""
+$(SIGNATURES)
+
+Compute the area of the given `ConvexHull` using the
+[shoelace formula](https://en.wikipedia.org/wiki/Shoelace_formula).
+"""
 function area(hull::ConvexHull)
-    # https://en.wikipedia.org/wiki/Shoelace_formula
     T = eltype(hull)
     vertices = hull.vertices
     n = length(vertices)

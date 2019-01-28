@@ -8,7 +8,7 @@ export
     num_vertices,
     area,
     centroid,
-    is_ordered_and_convex,
+    is_ordered_and_strongly_convex,
     closest_point,
     jarvis_march!,
     hrep,
@@ -17,6 +17,7 @@ export
 using LinearAlgebra
 using StaticArrays
 using StaticArrays: arithmetic_closure
+using DocStringExtensions
 
 include("order.jl")
 include("util.jl")
