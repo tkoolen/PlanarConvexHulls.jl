@@ -15,7 +15,7 @@ function centroid(hull::ConvexHull)
             c = cross2(vertices[n], vertices[1])
             centroid = (vertices[n] + vertices[1]) * c
             double_area = c
-            @simd for i in Base.OneTo(n - 1)
+            for i in Base.OneTo(n - 1)
                 c = cross2(vertices[i], vertices[i + 1])
                 centroid += (vertices[i] + vertices[i + 1]) * c
                 double_area += c

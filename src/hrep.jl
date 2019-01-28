@@ -37,7 +37,7 @@ end
         size(A) == (n, 2) || throw(DimensionMismatch())
         length(b) == n || throw(DimensionMismatch())
     end
-    @inbounds @simd ivdep for i = Base.OneTo(n)
+    @inbounds for i = Base.OneTo(n)
         Ai, bi = hrep_kernel(vertices, signop, i)
         A[i, 1] = Ai[1]
         A[i, 2] = Ai[2]
