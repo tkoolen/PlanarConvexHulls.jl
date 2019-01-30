@@ -3,6 +3,8 @@ language: julia
 os:
   - linux
   - osx
+env:
+  - FORCE_BUILD=true
 julia:
   - 1.1
   - nightly
