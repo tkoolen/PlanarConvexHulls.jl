@@ -26,6 +26,19 @@ struct ConvexHull{O<:VertexOrder, T, P<:PointLike{T}, V<:AbstractVector{P}}
     end
 end
 
+function ConvexHull{O, T, P, V}(vertices::AbstractVector{<:PointLike}; kwargs...) where {O<:VertexOrder, T, P<:PointLike{T}, V<:AbstractVector{P}}
+    ConvexHull{O}(convert(V, vertices); kwargs...)
+end
+
+function ConvexHull{O, T, P}(vertices::AbstractVector{<:PointLike}; kwargs...) where {O<:VertexOrder, T, P<:PointLike{T}}
+    ConvexHull{O}(map(P, vertices); kwargs...)
+end
+
+function ConvexHull{O, T}(vertices::AbstractVector{<:PointLike}; kwargs...) where {O<:VertexOrder, T}
+    P = similar_type(eltype(vertices), T)
+    ConvexHull{O, T, P}(vertices; kwargs...)
+end
+
 """
 $(SIGNATURES)
 
@@ -33,6 +46,18 @@ Create a new `ConvexHull` with order `O` and element type `T`, with an empty
 `Vector{SVector{2, T}}` as the list of vertices.
 """
 ConvexHull{O, T}() where {O<:VertexOrder, T} = ConvexHull{O}(SVector{2, T}[], check=false)
+
+"""
+$(SIGNATURES)
+
+Construct a `ConvexHull` from another `ConvexHull`. This constructor can be used to
+change to a different vertex storage type or order.
+"""
+function ConvexHull{O, T, P, V}(other::ConvexHull) where {O<:VertexOrder, T, P<:PointLike{T}, V<:AbstractVector{P}}
+    newvertices = O === vertex_order(other) ? V(other.vertices) : V(reverse(other.vertices))
+    return ConvexHull{O, T, P, V}(newvertices, check=false)
+end
+
 
 Base.eltype(::Type{<:ConvexHull{<:Any, T}}) where {T} = T
 
@@ -59,3 +84,19 @@ num_vertices(hull::ConvexHull) = length(vertices(hull))
 Base.isempty(hull::ConvexHull) = num_vertices(hull) > 0
 Base.empty!(hull::ConvexHull) = (empty!(hull.vertices); hull)
 Base.sizehint!(hull::ConvexHull, n) = (sizehint!(hull.vertices, n); hull)
+
+"""
+    SConvexHull{N, T}
+
+The default statically-sized `ConvexHull` type. Backed by an `SVector{N, SVector{2, T}}`
+with vertices ordered counter-clockwise.
+"""
+const SConvexHull{N, T} = ConvexHull{CCW, T, SVector{2, T}, SVector{N, SVector{2, T}}}
+
+"""
+    DConvexHull{N, T}
+
+The default dynamically-sized `ConvexHull` type. Backed by a `Vector{SVector{2, T}}`
+with vertices ordered counter-clockwise.
+"""
+const DConvexHull{T} = ConvexHull{CCW, T, SVector{2, T}, Vector{SVector{2, T}}}

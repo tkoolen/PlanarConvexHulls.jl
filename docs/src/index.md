@@ -17,6 +17,8 @@ of 2D points by its extreme points. Functionality includes:
 
 ```@docs
 ConvexHull
+SConvexHull
+DConvexHull
 vertices
 num_vertices
 ```
