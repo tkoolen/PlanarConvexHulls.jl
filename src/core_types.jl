@@ -39,13 +39,18 @@ function ConvexHull{O, T}(vertices::AbstractVector{<:PointLike}; kwargs...) wher
     ConvexHull{O, T, P}(vertices; kwargs...)
 end
 
+
+function ConvexHull{O, T, P, V}() where {O<:VertexOrder, T, P<:PointLike{T}, V<:Vector{P}}
+    ConvexHull{O}(P[], check=false)
+end
+
 """
 $(SIGNATURES)
 
 Create a new `ConvexHull` with order `O` and element type `T`, with an empty
 `Vector{SVector{2, T}}` as the list of vertices.
 """
-ConvexHull{O, T}() where {O<:VertexOrder, T} = ConvexHull{O}(SVector{2, T}[], check=false)
+ConvexHull{O, T}() where {O<:VertexOrder, T} = ConvexHull{O, T, SVector{2, T}, Vector{SVector{2, T}}}()
 
 """
 $(SIGNATURES)

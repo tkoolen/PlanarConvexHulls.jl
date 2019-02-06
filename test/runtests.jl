@@ -266,6 +266,8 @@ end
         @test eltype(hull) == Float64
         @test typeof(vertices(hull)) == SVector{4, SVector{2, Float64}}
     end
+
+    @test isempty(vertices(DConvexHull{Float64}()))
 end
 
 @testset "benchmarks" begin
