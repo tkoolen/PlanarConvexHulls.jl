@@ -33,6 +33,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#PlanarConvexHulls.SConvexHull",
+    "page": "Home",
+    "title": "PlanarConvexHulls.SConvexHull",
+    "category": "type",
+    "text": "SConvexHull{N, T}\n\nThe default statically-sized ConvexHull type. Backed by an SVector{N, SVector{2, T}} with vertices ordered counter-clockwise.\n\n\n\n\n\n"
+},
+
+{
+    "location": "#PlanarConvexHulls.DConvexHull",
+    "page": "Home",
+    "title": "PlanarConvexHulls.DConvexHull",
+    "category": "type",
+    "text": "DConvexHull{N, T}\n\nThe default dynamically-sized ConvexHull type. Backed by a Vector{SVector{2, T}} with vertices ordered counter-clockwise.\n\n\n\n\n\n"
+},
+
+{
     "location": "#PlanarConvexHulls.vertices",
     "page": "Home",
     "title": "PlanarConvexHulls.vertices",
@@ -53,7 +69,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "The ConvexHull type",
     "category": "section",
-    "text": "ConvexHull\nvertices\nnum_vertices"
+    "text": "ConvexHull\nSConvexHull\nDConvexHull\nvertices\nnum_vertices"
 },
 
 {
