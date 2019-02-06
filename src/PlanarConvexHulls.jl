@@ -2,6 +2,8 @@ module PlanarConvexHulls
 
 export
     ConvexHull,
+    SConvexHull,
+    DConvexHull,
     CW,
     CCW,
     vertices,

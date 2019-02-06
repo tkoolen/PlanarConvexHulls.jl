@@ -7,6 +7,8 @@ using Random
 using LinearAlgebra
 using Statistics
 
+using PlanarConvexHulls: vertex_order
+
 const Point{T} = SVector{2, T}
 
 @testset "is_ordered_and_strongly_convex" begin
@@ -225,6 +227,44 @@ end
             statichull = ConvexHull{order}(SVector{h}(vertices(dynamichull)))
             hreptest(statichull, rng)
         end
+    end
+end
+
+struct CustomPoint{T} <: FieldVector{2, T}
+    x::T
+    y::T
+end
+
+@testset "Constructors" begin
+    width = 4
+    height = 3
+    origin = Point(2, 4)
+    verts = map(x -> x + origin, [Point(0, 0), Point(width, 0), SVector(width, height), SVector(0, height)])
+    rectangle = ConvexHull{CW}(reverse(verts))
+
+    srectangle = SConvexHull{4, Float64}(rectangle)
+    drectangle = DConvexHull{Float64}(rectangle)
+    @test vertices(srectangle) isa SVector{4}
+    @test vertices(drectangle) isa Vector
+    for hull in [srectangle, drectangle]
+        @test vertex_order(hull) == CCW
+        @test eltype(hull) == Float64
+        @test is_ordered_and_strongly_convex(vertices(hull), vertex_order(hull))
+    end
+
+    let hull = ConvexHull{CCW, Float64}(verts)
+        @test vertices(hull) == verts
+        @test eltype(hull) == Float64
+    end
+    let hull = ConvexHull{CCW, Float64, CustomPoint{Float64}}(verts)
+        @test vertices(hull) == verts
+        @test eltype(hull) == Float64
+        @test typeof(vertices(hull)) == Vector{CustomPoint{Float64}}
+    end
+    let hull = ConvexHull{CCW, Float64, Point{Float64}, SVector{4, Point{Float64}}}(verts)
+        @test vertices(hull) == verts
+        @test eltype(hull) == Float64
+        @test typeof(vertices(hull)) == SVector{4, SVector{2, Float64}}
     end
 end
 
