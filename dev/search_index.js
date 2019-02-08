@@ -117,7 +117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "PlanarConvexHulls.jarvis_march!",
     "category": "function",
-    "text": "jarvis_march!(hull, points)\n\n\nCompute the convex hull of points and store the result in hull using the Jarvis march (gift wrapping) algorithm. This algorithm has O(nh) complexity, where n is the number of points and h is the number of vertices of the convex hull.\n\n\n\n\n\n"
+    "text": "jarvis_march!(hull, points; atol)\n\n\nCompute the convex hull of points and store the result in hull using the Jarvis march (gift wrapping) algorithm. This algorithm has O(nh) complexity, where n is the number of points and h is the number of vertices of the convex hull.\n\n\n\n\n\n"
 },
 
 {
