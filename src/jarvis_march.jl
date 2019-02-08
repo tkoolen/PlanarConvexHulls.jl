@@ -6,46 +6,43 @@ Compute the convex hull of `points` and store the result in `hull` using the
 This algorithm has ``O(nh)`` complexity, where ``n`` is the number of points and ``h`` is
 the number of vertices of the convex hull.
 """
-function jarvis_march!(hull::ConvexHull, points::AbstractVector{<:PointLike})
+function jarvis_march!(hull::ConvexHull, points::AbstractVector{<:PointLike}; atol=eps(eltype(hull)))
     # Adapted from https://www.algorithm-archive.org/contents/jarvis_march/jarvis_march.html.
     op = orientation_comparator(hull)
     n = length(points)
     vertices = hull.vertices
     @inbounds begin
+        # Preallocate
+        resize!(vertices, n)
         if n <= 2
-            resize!(vertices, n)
             vertices .= points
         else
-            # Preallocate
-            resize!(vertices, n)
-
             # Find an initial hull vertex using lexicographic ordering.
-            start = last(points)
-            for i in Base.OneTo(n - 1)
+            current = first(points)
+            for i in 2 : n
                 p = points[i]
-                if Tuple(p) < Tuple(start)
-                    start = p
+                if Tuple(p) < Tuple(current)
+                    current = p
                 end
             end
 
             i = 1
-            current = start
             while true
                 # Add point
                 vertices[i] = current
 
                 # Next point is the one with extremal internal angle.
-                next = last(points)
+                next = first(points)
                 δnext = next - current
-                for i in Base.OneTo(n - 1)
-                    p = points[i]
+                for j in 2 : n
+                    p = points[j]
                     δ = p - current
                     c = cross2(δnext, δ)
 
                     # Note the last clause here, which ensures strong convexity in the presence of
                     # collinear points by accepting `p` if it's farther away from `current` than
                     # `next`.
-                    if next == current || op(0, c) || (c == 0 && δ ⋅ δ > δnext ⋅ δnext)
+                    if next == current || (op(0, c) && abs(c) > atol) || (abs(c) <= atol && δ ⋅ δ > δnext ⋅ δnext)
                         next = p
                         δnext = δ
                     end
@@ -53,6 +50,11 @@ function jarvis_march!(hull::ConvexHull, points::AbstractVector{<:PointLike})
                 current = next
                 current == first(vertices) && break
                 i += 1
+                if i > n
+                    # println(IOContext(stdout, :compact=>false), points)
+                    # println(IOContext(stdout, :compact=>false), vertices)
+                    error("should never get here.")
+                end
             end
 
             # Shrink to computed number of vertices.
