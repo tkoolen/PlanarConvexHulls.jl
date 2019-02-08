@@ -53,6 +53,10 @@ function jarvis_march!(hull::ConvexHull, points::AbstractVector{<:PointLike})
                 current = next
                 current == first(vertices) && break
                 i += 1
+                if i > n
+                    error("should never get here.")
+                    # print(IOContext(stdout, :compact=>false), points)
+                end
             end
 
             # Shrink to computed number of vertices.
