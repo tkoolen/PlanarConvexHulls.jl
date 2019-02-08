@@ -203,11 +203,24 @@ end
     # end
 end
 
+function make_oversized(A::AbstractMatrix, b::AbstractVector)
+    n = length(b)
+    n_oversized = n + 1
+    similar(A, (n_oversized, 2)), similar(b, n_oversized)
+end
+
+function make_oversized(A::SMatrix, b::SVector{n}) where n
+    n_oversized = n + 1
+    similar(A, Size(n_oversized, 2)), similar(b, Size(n_oversized))
+end
+
 function hreptest(hull::H, rng) where {H<:ConvexHull}
     A, b = hrep(hull)
+    A_oversized, b_oversized = make_oversized(A, b)
+    hrep!(A_oversized, b_oversized, hull)
     for _ = 1 : 100
         testpoint = rand(rng, Point{Float64})
-        @test (testpoint ∈ hull) == all(A * testpoint .<= b)
+        @test (testpoint ∈ hull) == all(A * testpoint .<= b) == all(A_oversized * testpoint .<= b_oversized)
     end
     if Length(vertices(hull)) !== Length{StaticArrays.Dynamic()}()
         @test(@allocated(hrep(hull)) == 0)

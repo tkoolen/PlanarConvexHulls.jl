@@ -52,10 +52,15 @@ This function stores its output in the (mutable) matrix `A` and vector `b`.
     vertices = hull.vertices
     n = length(vertices)
     @boundscheck begin
-        size(A) == (n, 2) || throw(DimensionMismatch())
-        length(b) == n || throw(DimensionMismatch())
+        size(A, 1) >= n || throw(DimensionMismatch())
+        size(A, 2) == 2 || throw(DimensionMismatch())
+        size(A, 1) == length(b) || throw(DimensionMismatch)
     end
-    @inbounds @simd ivdep for i = Base.OneTo(n)
+    if length(b) != n
+        @inbounds A .= 0
+        @inbounds b .= 0
+    end
+    @inbounds @simd for i = Base.OneTo(n)
         v1 = vertices[i]
         v2 = vertices[ifelse(i == n, 1, i + 1)]
         δ = v2 - v1
@@ -67,4 +72,5 @@ This function stores its output in the (mutable) matrix `A` and vector `b`.
         A[i, 2] = Ai[2]
         b[i] = bi
     end
+    nothing
 end
