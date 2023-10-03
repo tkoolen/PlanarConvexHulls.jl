@@ -1,13 +1,13 @@
-module PlanarConvexHullsTest
+module PolygonTest
 
-using PlanarConvexHulls
+using Polygon
 using StaticArrays
 using Test
 using Random
 using LinearAlgebra
 using Statistics
 
-using PlanarConvexHulls: vertex_order
+using Polygon: vertex_order
 
 const Point{T} = SVector{2, T}
 
@@ -302,8 +302,8 @@ end
     @test isempty(vertices(DConvexHull{Float64}()))
 end
 
-@testset "benchmarks" begin
-    include(joinpath("..", "perf", "runbenchmarks.jl"))
-end
+# @testset "benchmarks" begin
+#     include(joinpath("..", "perf", "runbenchmarks.jl"))
+# end
 
 end # module

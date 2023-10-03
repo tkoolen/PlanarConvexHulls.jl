@@ -1,16 +1,16 @@
 push!(LOAD_PATH,"../src/")
 
 using Documenter
-using PlanarConvexHulls
+using Polygon
 
-DocMeta.setdocmeta!(PlanarConvexHulls, :DocTestSetup, :(using PlanarConvexHulls); recursive=true)
+DocMeta.setdocmeta!(Polygon, :DocTestSetup, :(using Polygon); recursive=true)
 
 makedocs(;
-    modules=[PlanarConvexHulls],
+    modules=[Polygon],
     checkdocs = :exports,
     root = @__DIR__,
-    sitename="PlanarConvexHulls.jl",
-    authors = "Twan Koolen and contributors.",
+    sitename="Polygon.jl",
+    authors = "JuliaImages Team",
     pages = [
         "Home" => "index.md",
     ],
@@ -18,5 +18,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/JuliaImages/PlanarConvexHulls.jl",
+    repo="github.com/JuliaImages/Polygon.jl",
 )

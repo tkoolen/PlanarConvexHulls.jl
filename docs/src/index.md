@@ -1,6 +1,6 @@
-# PlanarConvexHulls.jl
+# Polygon.jl
 
-PlanarConvexHulls provides a `ConvexHull` type, which represents the convex hull of a set
+Polygon provides a `ConvexHull` type, which represents the convex hull of a set
 of 2D points by its extreme points. Functionality includes:
 
 * convexity test
@@ -26,7 +26,7 @@ num_vertices
 ### `VertexOrder`s
 
 ```@docs
-PlanarConvexHulls.VertexOrder
+Polygon.VertexOrder
 CCW
 CW
 ```
@@ -38,7 +38,7 @@ is_ordered_and_strongly_convex
 jarvis_march!
 area
 centroid
-Base.in(point::PlanarConvexHulls.PointLike, hull::ConvexHull)
+Base.in(point::Polygon.PointLike, hull::ConvexHull)
 closest_point
 hrep
 hrep!

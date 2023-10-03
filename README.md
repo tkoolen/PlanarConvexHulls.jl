@@ -1,9 +1,9 @@
-# PlanarConvexHulls
+# Polygon
 
-[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliaimages.org/PlanarConvexHulls.jl/dev)
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliaimages.org/PlanarConvexHulls.jl/stable)
+[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliaimages.org/Polygon.jl/dev)
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliaimages.org/Polygon.jl/stable)
 
-PlanarConvexHulls provides a `ConvexHull` type, which represents the convex hull of a set
+Polygon provides a `ConvexHull` type, which represents the convex hull of a set
 of 2D points by its extreme points. Functionality includes:
 
 * convexity test

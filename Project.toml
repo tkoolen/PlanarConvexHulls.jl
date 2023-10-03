@@ -1,7 +1,7 @@
-name = "PlanarConvexHulls"
-uuid = "145d500b-351c-58b3-a0aa-f5d7e249d989"
-authors = ["Twan Koolen <koolen.twan@gmail.com>"]
-version = "0.3.0"
+name = "Polygon"
+uuid = "04546dd0-6203-11ee-3afb-992967b07377"
+authors = "JuliaImages Team"
+version = "1.0.0"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
@@ -12,4 +12,3 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 DocStringExtensions = "^0.8"
 StaticArrays = "^1.5"
 julia = "1.6"
-

@@ -2,7 +2,7 @@ import Pkg
 Pkg.activate(@__DIR__)
 
 using BenchmarkTools
-using PlanarConvexHulls
+using Polygon
 using StaticArrays
 using Random
 

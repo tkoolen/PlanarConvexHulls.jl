@@ -1,3 +1,3 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-PlanarConvexHulls = "145d500b-351c-58b3-a0aa-f5d7e249d989"
+Polygon = "04546dd0-6203-11ee-3afb-992967b07377"

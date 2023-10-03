@@ -1,4 +1,4 @@
-module PlanarConvexHulls
+module Polygon
 
 export
     ConvexHull,
